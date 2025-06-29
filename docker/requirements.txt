@@ -1,0 +1,10 @@
+alibabacloud-dingtalk>=2.2.19
+crawl4ai>=0.6.3
+dashscope>=1.23.6
+fastapi>=0.115.13
+jsonpath-ng>=1.7.0
+nats-py>=2.10.0
+pydantic-settings>=2.10.0
+tortoise-orm[asyncpg]>=0.25.1
+trafilatura>=2.0.0
+uvicorn>=0.34.3
