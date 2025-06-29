@@ -5,10 +5,11 @@ WORKDIR /app
 COPY requirements.txt .
 COPY entrypoint.sh .
 
-RUN pip install --no-cache-dir -r requirements.txt && \
-    playwright install --with-deps chromium
+RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list.d/debian.sources && \
+    pip install --index-url https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt && \
+    playwright install --with-deps chromium && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY ../src/* .
+COPY src/* .
 
 ENTRYPOINT ["entrypoint.sh"]
-
