@@ -10,6 +10,6 @@ RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.li
     playwright install --with-deps chromium && \
     rm -rf /var/lib/apt/lists/*
 
-COPY src/* .
+COPY src/. .
 
 ENTRYPOINT ["entrypoint.sh"]
