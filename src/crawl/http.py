@@ -32,7 +32,7 @@ run_config = CrawlerRunConfig(
 
 # 爬取列表页
 async def crawl_list_using_http(url: str, rule: list[str]) -> dict[str, str]:
-    async with AsyncWebCrawler(strategy=AsyncHTTPCrawlerStrategy(browser_config=http_crawler_config)) as crawler:
+    async with AsyncWebCrawler(crawler_strategy=AsyncHTTPCrawlerStrategy(browser_config=http_crawler_config)) as crawler:
 
         # 设置提取规则
         schema = generate_extraction_schema(rule)
@@ -60,7 +60,7 @@ class DetailResult:
 
 
 async def crawl_detail_using_http(url: str) -> DetailResult:
-    async with AsyncWebCrawler(strategy=AsyncHTTPCrawlerStrategy(browser_config=http_crawler_config)) as crawler:
+    async with AsyncWebCrawler(crawler_strategy=AsyncHTTPCrawlerStrategy(browser_config=http_crawler_config)) as crawler:
         result = await crawler.arun(url, config=run_config)
         if result.success:
             content = extract(result.html)

@@ -2,9 +2,10 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from nats.aio.client import Client
 from tortoise.contrib.fastapi import RegisterTortoise
 from database.connection import generate_tortoise_config
-from database.models import Page, PageSignature, PushSubscription, Site
+from database.models import Page, PageContent, PageSignature, PushSubscription, Site
 from dingtalk.client import DingTalkClient
 from llm.bailian import Bailian
 from log.logger import server_logger
@@ -18,8 +19,8 @@ from util.page import get_signature, is_hit_keywords
 
 app_settings = get_settings()
 
-async def subscribe_and_save_crawl_page_content_and_push():
-    sub = await MsgQueue.subscribe(QUEUE_CRAWL_PAGECONTENT, worker_mode=True)
+async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
+    sub = await sub_conn.subscribe(QUEUE_CRAWL_PAGECONTENT, queue="workers")
 
     sites = await Site.all()
     content_filter_keywords = {site.id: site.content_filter_keywords for site in sites}
@@ -42,12 +43,17 @@ async def subscribe_and_save_crawl_page_content_and_push():
             # 如果命中过滤关键词才进行保存
             if is_hit_keywords(page_content.title, page_content.content, content_filter_keyword):
                 summary = await Bailian.text_summary(page_content.title, page_content.content)
-                await Page.create(
+                page = await Page.create(
                     site_id=site_id,
                     url=page_content.url,
                     summary=summary,
                     date=page_content.date,
                     signature_id=page_signature.id
+                )
+
+                await PageContent.create(
+                    page_id=page.id,
+                    content=page_content.content
                 )
 
                 # 对订阅用户推送
@@ -70,9 +76,6 @@ async def lifespan(app: FastAPI):
     # 初始化百炼
     Bailian.init(app_settings.dashscope_api_key)
 
-    # 初始化消息队列
-    await MsgQueue.init(settings=app_settings)
-
     # 初始化钉钉
     await DingTalkClient.init(
         accesskey_id=app_settings.dingtalk_accesskey_id,
@@ -81,7 +84,8 @@ async def lifespan(app: FastAPI):
     )
 
     # 订阅爬取页面内容并保存和推送
-    asyncio.create_task(subscribe_and_save_crawl_page_content_and_push())
+    sub_conn = await MsgQueue.connect(settings=app_settings)
+    asyncio.create_task(subscribe_and_save_crawl_page_content_and_push(sub_conn))
 
     # 初始化数据库
     async with RegisterTortoise(
@@ -92,7 +96,7 @@ async def lifespan(app: FastAPI):
         yield
 
     # 关闭消息队列连接
-    await MsgQueue.close()
+    await sub_conn.close()
 
 app = FastAPI(lifespan=lifespan, title="资讯政策数据采集", description="资讯政策数据采集")
 

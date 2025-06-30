@@ -1,5 +1,6 @@
 import asyncio
 
+from nats.aio.client import Client
 from nats.aio.subscription import Subscription
 from crawl.util import duplicate_url
 from database.models import CrawlType
@@ -15,47 +16,60 @@ from util.http import HttpClient
 settings = Settings()
 
 async def main():
+    pub_conn = None
+    sub_listpage_conn = None
+    sub_detailpage_conn = None
     try:
         # 初始化http连接器
         await HttpClient.init(conn_limit=10, conn_limit_per_host=10, timeout=10)
+        crawl_logger.info("HttpClient initialized")
 
         # 初始化消息队列
-        await MsgQueue.init(settings)
+        pub_conn = await MsgQueue.connect(settings)
+        sub_listpage_conn = await MsgQueue.connect(settings)
+        sub_detailpage_conn = await MsgQueue.connect(settings)
 
         # 订阅列表页
-        list_sub = await MsgQueue.subscribe(subject=QUEUE_CRAWL_LISTPAGE, worker_mode=True)
+        list_sub = await sub_listpage_conn.subscribe(subject=QUEUE_CRAWL_LISTPAGE, queue="workers")
+        crawl_logger.info("List page subscription initialized")
 
         # 订阅正文页
-        detail_sub = await MsgQueue.subscribe(subject=QUEUE_CRAWL_DETAILPAGE, worker_mode=True)
+        detail_sub = await sub_detailpage_conn.subscribe(subject=QUEUE_CRAWL_DETAILPAGE, queue="workers")
+        crawl_logger.info("Detail page subscription initialized")
 
         # 启动消费任务
         await asyncio.gather(
-            crawl_list_page_loop(list_sub),
-            crawl_detail_page_loop(detail_sub),
+            crawl_list_page_loop(list_sub, pub_conn),
+            crawl_detail_page_loop(detail_sub, pub_conn),
         )
     except Exception as e:
         crawl_logger.error(f"Main loop error: {e}")
     finally:
-        await MsgQueue.close()
+        if pub_conn and not pub_conn.is_closed:
+            await pub_conn.close()
+        if sub_listpage_conn and not sub_listpage_conn.is_closed:
+            await sub_listpage_conn.close()
+        if sub_detailpage_conn and not sub_detailpage_conn.is_closed:
+            await sub_detailpage_conn.close()
 
 # 爬取列表页
-async def crawl_list_page_loop(list_sub: Subscription):
+async def crawl_list_page_loop(list_sub: Subscription, pub_conn: Client):
     async for msg in list_sub.messages:
         try:
             msg = CrawlListPageMsg.model_validate_json(msg.data.decode("utf-8"))
             detail_msgs = await crawl_list(msg)
             for detail_msg in detail_msgs:
-                await MsgQueue.publish(subject=QUEUE_CRAWL_DETAILPAGE, msg=detail_msg)
+                await pub_conn.publish(QUEUE_CRAWL_DETAILPAGE, detail_msg.model_dump_json().encode("utf-8"))
         except Exception as e:
             crawl_logger.error(f"CrawlList loop error: {e}")
 
 # 爬取正文页
-async def crawl_detail_page_loop(detail_sub: Subscription):
+async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
     async for msg in detail_sub.messages:
         try:
             msg = CrawlDetailPageMsg.model_validate_json(msg.data.decode("utf-8"))
             content_msg = await crawl_detail(msg)
-            await MsgQueue.publish(subject=QUEUE_CRAWL_PAGECONTENT, msg=content_msg)
+            await pub_conn.publish(QUEUE_CRAWL_PAGECONTENT, content_msg.model_dump_json().encode("utf-8"))
         except Exception as e:
             crawl_logger.error(f"CrawlDetail loop error: {e}")
 
@@ -86,8 +100,10 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
 async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
     match msg.crawl_detail_type:
         case CrawlType.HTML_DYNAMIC:
+            print(f"Crawling detail page using browser: {msg.url}")
             detail = await crawl_detail_using_browser(msg.url)
         case CrawlType.HTML_STATIC:
+            print(f"Crawling detail page using http: {msg.url}")
             detail = await crawl_detail_using_http(msg.url)
 
     return CrawlPageContentMsg(
