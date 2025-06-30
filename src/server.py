@@ -45,6 +45,7 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
                 summary = await Bailian.text_summary(page_content.title, page_content.content)
                 page = await Page.create(
                     site_id=site_id,
+                    title=page_content.title,
                     url=page_content.url,
                     summary=summary,
                     date=page_content.date,

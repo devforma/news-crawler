@@ -30,6 +30,7 @@ class Site(models.Model):
 class Page(models.Model):
     id = fields.BigIntField(primary_key=True, generated=True)
     site_id = fields.IntField(description="站点ID", index=True)
+    title = fields.TextField(description="标题")
     url = fields.TextField(description="URL")
     summary = fields.TextField(description="摘要")
     date = fields.DatetimeField(description="日期")

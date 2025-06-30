@@ -26,6 +26,6 @@ class HttpClient:
             raise ConnectionError("Http connector not initialized")
 
         headers["Content-Type"] = "application/json"
-        async with aiohttp.ClientSession(connector=cls._http_connector) as session:
+        async with aiohttp.ClientSession(connector=cls._http_connector, connector_owner=False) as session:
             async with session.post(url, headers=headers, data=json.dumps(list(data.keys())), timeout=cls._http_timeout) as response:
                 return await response.json()

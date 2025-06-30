@@ -72,6 +72,8 @@ async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
             await pub_conn.publish(QUEUE_CRAWL_PAGECONTENT, content_msg.model_dump_json().encode("utf-8"))
         except Exception as e:
             crawl_logger.error(f"CrawlDetail loop error: {e}")
+        finally:
+            await asyncio.sleep(1)
 
 # 爬取列表页
 async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
@@ -100,10 +102,8 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
 async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
     match msg.crawl_detail_type:
         case CrawlType.HTML_DYNAMIC:
-            print(f"Crawling detail page using browser: {msg.url}")
             detail = await crawl_detail_using_browser(msg.url)
         case CrawlType.HTML_STATIC:
-            print(f"Crawling detail page using http: {msg.url}")
             detail = await crawl_detail_using_http(msg.url)
 
     return CrawlPageContentMsg(
