@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -7,6 +8,9 @@ class Settings(BaseSettings):
     # api server
     api_server_host: str = Field(description="API server host", default="0.0.0.0")
     api_server_port: int = Field(description="API server port", default=8000)
+
+    # admin auth token
+    admin_auth_token: str = Field(description="Admin auth token", default="")
 
     # database
     postgres_host: str = Field(description="PostgreSQL host", default="localhost")
@@ -31,3 +35,7 @@ class Settings(BaseSettings):
 
     # url deduplicate api
     url_deduplicate_api: str = Field(description="URL deduplicate api", default="")
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()

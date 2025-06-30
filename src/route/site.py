@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from database.models import CrawlType, Site, SiteCategory
 from route.response import Response
+from settings import get_settings, Settings
 
 site_router = APIRouter(prefix="/site", tags=["site"])
 
@@ -48,7 +49,10 @@ class SiteAddRequest(BaseModel):
     paywall: bool = Field(False, description="是否付费阅读")
 
 @site_router.post("/add", description="添加站点")
-async def add_site(request: SiteAddRequest) -> Response[int]:
+async def add_site(request: SiteAddRequest, token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[int]:
+    if token != settings.admin_auth_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     try:
         exist_site = await Site.filter(listpage_url=request.listpage_url).first()
         if exist_site:

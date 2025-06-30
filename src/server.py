@@ -11,12 +11,12 @@ from log.logger import server_logger
 from pubsub.msg import CrawlPageContentMsg
 from route.crawl import crawl_router
 from route.site import site_router
-from settings import Settings
+from settings import get_settings
 from middleware.log import AccessLogMiddleware
 from pubsub.connection import QUEUE_CRAWL_PAGECONTENT, MsgQueue
 from util.page import get_signature, is_hit_keywords
 
-app_settings = Settings()
+app_settings = get_settings()
 
 async def subscribe_and_save_crawl_page_content_and_push():
     sub = await MsgQueue.subscribe(QUEUE_CRAWL_PAGECONTENT, worker_mode=True)

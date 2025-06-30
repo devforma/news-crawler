@@ -1,17 +1,15 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 import hashlib
 from database.models import PageSignature, Site
 from pubsub.connection import MsgQueue, QUEUE_CRAWL_LISTPAGE
 from pubsub.msg import CrawlListPageMsg
 from route.response import Response
-
+from settings import get_settings, Settings
 crawl_router = APIRouter(prefix="/crawl", tags=["爬取"])
 
-SCHEDULE_AUTH_TOKEN = "6iOJKHyQu8Byg4lm"
-
 @crawl_router.get("/schedule", description="触发爬取任务,将所有站点列表页加入爬取队列")
-async def schedule(token: str = Query(..., description="授权令牌")) -> Response[bool]:
-    if token != SCHEDULE_AUTH_TOKEN:
+async def schedule(token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[bool]:
+    if token != settings.admin_auth_token:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     sites = await Site.all()
