@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 import hashlib
 from database.models import PageSignature, Site
+from log.logger import server_logger
 from pubsub.connection import MsgQueue, QUEUE_CRAWL_LISTPAGE
 from pubsub.msg import CrawlListPageMsg
 from route.response import Response
@@ -12,20 +13,31 @@ async def schedule(token: str = Query(..., description="授权令牌"), settings
     if token != settings.admin_auth_token:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    sites = await Site.all()
-    for site in sites:
-        await MsgQueue.publish(
-            subject=QUEUE_CRAWL_LISTPAGE,
-            msg=CrawlListPageMsg(
-                site_id=site.id,
-                site_name=site.name,
-                url=site.listpage_url,
-                crawl_list_type=site.listpage_crawl_type,
-                crawl_detail_type=site.detailpage_crawl_type,
-                rule=site.listpage_parse_rule,
-                paywall=site.paywall,
+    pub_conn = None
+    try:
+        pub_conn = await MsgQueue.connect(settings)
+
+        sites = await Site.all()
+        for site in sites:
+            await pub_conn.publish(
+                subject=QUEUE_CRAWL_LISTPAGE,
+                payload=CrawlListPageMsg(
+                    site_id=site.id,
+                    site_name=site.name,
+                    url=site.listpage_url,
+                    crawl_list_type=site.listpage_crawl_type,
+                    crawl_detail_type=site.detailpage_crawl_type,
+                    rule=site.listpage_parse_rule,
+                    paywall=site.paywall,
+                ).model_dump_json().encode("utf-8")
             )
-        )
+
+    except Exception as e:
+        server_logger.error(f"Schedule crawl error: {e}")
+        return Response.fail("触发爬取任务失败")
+    finally:
+        if pub_conn and not pub_conn.is_closed:
+            await pub_conn.close()
 
     return Response.success(True)
 
