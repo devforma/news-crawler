@@ -3,3 +3,5 @@
 cp -r ../src .
 
 docker build -t news-crawler:latest .
+
+rm -r ./src
