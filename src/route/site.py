@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from database.models import CrawlType, DomainBlacklist, Site, SiteCategory
+from database.models import CrawlType, DomainBlacklist, PushSubscription, Site, SiteCategory
 from route.response import Response
 from settings import get_settings, Settings
 
@@ -47,6 +47,8 @@ class SiteAddRequest(BaseModel):
     listpage_parse_rule: list[str] = Field(..., description="列表页解析规则")
     content_filter_keywords: str = Field(..., description="内容过滤关键词")
     paywall: bool = Field(False, description="是否付费阅读")
+    subscribe_staff_numbers: list[str] = Field([], description="订阅用户工号列表")
+    subscribe_filter_keywords: str = Field("", description="订阅过滤关键词")
 
 @site_router.post("/add", description="添加站点")
 async def add_site(request: SiteAddRequest, token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[int]:
@@ -68,9 +70,43 @@ async def add_site(request: SiteAddRequest, token: str = Query(..., description=
             content_filter_keywords=request.content_filter_keywords,
             paywall=request.paywall,
         )
+
+        for staff_number in request.subscribe_staff_numbers:
+            await PushSubscription.create(
+                site_id=site.id,
+                staff_number=staff_number,
+                filter_keywords=request.subscribe_filter_keywords,
+            )
+
         return Response.success(site.id)
     except Exception as e:
         return Response.fail(f"添加站点失败: {e}")
+
+
+class SubscribeAddRequest(BaseModel):
+    site_id: int = Field(..., description="站点ID")
+    user_id: str = Field(..., description="用户ID")
+    filter_keywords: str = Field("", description="过滤关键词")
+
+@site_router.post("/subscribe/add", description="添加订阅")
+async def subscribe_site(request: SubscribeAddRequest, token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[bool]:
+    if token != settings.admin_auth_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    exist = await PushSubscription.filter(site_id=request.site_id, staff_number=request.user_id).exists()
+    if exist:
+        return Response.success(True)
+    
+    try:
+        await PushSubscription.create(
+            site_id=request.site_id,
+            staff_number=request.user_id,
+            filter_keywords=request.filter_keywords,
+        )
+        return Response.success(True)
+    except Exception as e:
+        return Response.fail(f"添加订阅失败: {e}")
+
 
 
 class DomainBlacklistAddRequest(BaseModel):
