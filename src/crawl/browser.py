@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import json
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, JsonCssExtractionStrategy, CrawlerRunConfig, LXMLWebScrapingStrategy
 from playwright.async_api import BrowserContext, Page, Route
-from crawl.util import filter_links, generate_extraction_schema
+from crawl.util import browser_blacklist_url_keys, filter_links, generate_extraction_schema
 from log.logger import crawl_logger
 from trafilatura import extract, extract_metadata
 
@@ -19,6 +19,7 @@ run_config = CrawlerRunConfig(
     scraping_strategy=LXMLWebScrapingStrategy(),
     cache_mode=CacheMode.DISABLED,
     page_timeout=PAGE_TIMEOUT,
+    delay_before_return_html=4,
     magic=True,
 )
 
@@ -43,13 +44,13 @@ async def crawl_list_using_browser(url: str, rule: list[str]) -> dict[str, str]:
             crawl_logger.error(f"CrawlList failed: {url} {result.error_message}")
         return {}
 
-# 爬取详情页
 
 @dataclass
 class DetailResult:
     content: str
     date: str
 
+# 爬取详情页
 async def crawl_detail_using_browser(url: str) -> DetailResult:
     async with AsyncWebCrawler(config=browser_config) as crawler:
         crawler.crawler_strategy.set_hook("on_page_context_created", on_page_context_created)
@@ -57,7 +58,7 @@ async def crawl_detail_using_browser(url: str) -> DetailResult:
         if result.success:
             content = extract(result.html)
             metadata = extract_metadata(result.html)
-            return DetailResult(content=content, date=metadata.date or "")
+            return DetailResult(content=str(content), date=metadata.date or "")
         else:
             crawl_logger.error(f"CrawlDetail failed: {url} {result.error_message}")
             return DetailResult(content="", date="")
@@ -66,7 +67,8 @@ async def crawl_detail_using_browser(url: str) -> DetailResult:
 # 过滤无用资源请求
 async def on_page_context_created(page: Page, context: BrowserContext, **kwargs):
     async def route_filter(route: Route):
-        if route.request.resource_type in ["image", "stylesheet", "font", "media"]:
+        if route.request.resource_type in ["image", "stylesheet", "font", "media"] \
+            or any(url_key in route.request.url for url_key in browser_blacklist_url_keys): # 过滤无用资源请求
             crawl_logger.debug(f"Blocking request: {route.request.url}")
             await route.abort()
         else:

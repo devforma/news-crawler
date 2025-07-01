@@ -1,9 +1,16 @@
-import re
 from typing import Any
 from urllib.parse import urljoin
 
 from util.http import HttpClient
 from log.logger import crawl_logger
+
+# 浏览器黑名单域名列表
+browser_blacklist_url_keys = [
+    "google-analytics.com",
+    "doubleclick.net",
+    "ads.google.com",
+    "hm.baidu.com",
+]
 
 def generate_extraction_schema(anchor_selectors: list[str]) -> dict[str, Any]:
     schema = {

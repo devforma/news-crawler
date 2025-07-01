@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from nats.aio.client import Client
 from nats.aio.subscription import Subscription
@@ -77,6 +78,7 @@ async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
 
 # 爬取列表页
 async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
+    start_time = time.time()
     match msg.crawl_list_type:
         case CrawlType.HTML_DYNAMIC:
             pages = await crawl_list_using_browser(msg.url, msg.rule)
@@ -84,11 +86,13 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
             pages = await crawl_list_using_http(msg.url, msg.rule)
         case CrawlType.JSON:
             pages = await crawl_list_using_json(msg.url, msg.rule)
-
+    end_time = time.time()
+    crawl_logger.info(f"CrawlList time: {end_time - start_time:.3f} seconds, url: {msg.url}, pages: {len(pages)}")
     if len(pages) == 0:
         return []
 
     deduplicated_pages = await duplicate_url(settings.url_deduplicate_api, pages)
+    crawl_logger.info(f"CrawlList deduplicated: url: {msg.url}, pages: {len(deduplicated_pages)}")
     if len(deduplicated_pages) == 0:
         return []
 
@@ -100,11 +104,14 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
 
 # 爬取正文页
 async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
+    start_time = time.time()
     match msg.crawl_detail_type:
         case CrawlType.HTML_DYNAMIC:
             detail = await crawl_detail_using_browser(msg.url)
         case CrawlType.HTML_STATIC:
             detail = await crawl_detail_using_http(msg.url)
+    end_time = time.time()
+    crawl_logger.info(f"CrawlDetail time: {end_time - start_time:.3f} seconds, url: {msg.url}")
 
     return CrawlPageContentMsg(
         site_id=msg.site_id,
