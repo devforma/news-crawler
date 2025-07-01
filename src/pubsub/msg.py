@@ -13,6 +13,7 @@ class CrawlListPageMsg(Msg):
     crawl_detail_type: CrawlType
     rule: list[str]
     paywall: bool
+    first_crawl: bool
 
 class CrawlDetailPageMsg(Msg):
     site_id: int
@@ -20,6 +21,7 @@ class CrawlDetailPageMsg(Msg):
     title: str
     url: str
     crawl_detail_type: CrawlType
+    first_crawl: bool
 
 class CrawlPageContentMsg(Msg):
     site_id: int
@@ -28,3 +30,4 @@ class CrawlPageContentMsg(Msg):
     url: str
     date: str
     content: str
+    first_crawl: bool

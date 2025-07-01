@@ -57,7 +57,11 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
                     content=page_content.content
                 )
 
-                # 对订阅用户推送
+                # 首次爬取数据量大, 不进行推送
+                if page_content.first_crawl:
+                    continue
+
+                # 非首次爬取, 根据推送过滤关键词进行推送
                 for user_id in push_user_ids.get(str(site_id), []):
                     # 命中推送过滤关键词才进行推送
                     push_filter_keyword = push_filter_keywords.get(f"{site_id}__{user_id}", "")

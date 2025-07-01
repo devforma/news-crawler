@@ -22,6 +22,7 @@ class Site(models.Model):
     content_filter_keywords = fields.TextField(default="", description="内容过滤关键词")
     paywall = fields.BooleanField(default=False, description="是否付费阅读")
     created_at = fields.DatetimeField(auto_now_add=True)
+    crawled_at = fields.DatetimeField(null=True, description="最近爬取时间")
 
     class Meta:
         table = "sites"

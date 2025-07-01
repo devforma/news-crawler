@@ -97,7 +97,14 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
         return []
 
     return [
-        CrawlDetailPageMsg(site_id=msg.site_id, site_name=msg.site_name, url=url, title=title, crawl_detail_type=msg.crawl_detail_type)
+        CrawlDetailPageMsg(
+            site_id=msg.site_id,
+            site_name=msg.site_name,
+            url=url,
+            title=title,
+            crawl_detail_type=msg.crawl_detail_type,
+            first_crawl=msg.first_crawl,
+        )
         for url, title in deduplicated_pages.items()
     ]
 
@@ -120,6 +127,7 @@ async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
         title=msg.title,
         date=detail.date,
         content=detail.content,
+        first_crawl=msg.first_crawl,
     )
 
 

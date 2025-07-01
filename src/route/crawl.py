@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 import hashlib
 from database.models import DomainBlacklist, PageSignature, Site
@@ -29,8 +30,14 @@ async def schedule(token: str = Query(..., description="授权令牌"), settings
                     crawl_detail_type=site.detailpage_crawl_type,
                     rule=site.listpage_parse_rule,
                     paywall=site.paywall,
+                    first_crawl=site.crawled_at is None, # 首次爬取标记, 用于判断是否需要发送推送
                 ).model_dump_json().encode("utf-8")
             )
+
+            # 更新站点最近爬取时间
+            if site.crawled_at is None:
+                site.crawled_at = datetime.now()
+                await site.save()
 
     except Exception as e:
         server_logger.error(f"Schedule crawl error: {e}")
