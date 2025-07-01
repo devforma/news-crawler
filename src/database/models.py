@@ -67,3 +67,12 @@ class PushSubscription(models.Model):
     class Meta:
         table = "push_subscriptions"
         table_description = "站点新内容推送订阅列表"
+
+class DomainBlacklist(models.Model):
+    id = fields.IntField(primary_key=True, generated=True)
+    domain = fields.CharField(max_length=255, description="域名", unique=True)
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+
+    class Meta:
+        table = "domain_blacklist"
+        table_description = "域名黑名单"

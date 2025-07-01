@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 import hashlib
-from database.models import PageSignature, Site
+from database.models import DomainBlacklist, PageSignature, Site
 from log.logger import server_logger
 from pubsub.connection import MsgQueue, QUEUE_CRAWL_LISTPAGE
 from pubsub.msg import CrawlListPageMsg
@@ -45,6 +45,10 @@ async def schedule(token: str = Query(..., description="授权令牌"), settings
 async def deduplicate(urls: list[str]) -> Response[list[str]]:
     if not urls:
         return Response.success([])
+
+    # 检查urls中是否包含域名黑名单中的域名
+    domain_blacklist = await DomainBlacklist.all().values_list("domain", flat=True)
+    urls = list(filter(lambda url: not any(domain in url for domain in domain_blacklist), urls))
 
     signature_url_map: dict[str, str] = {}
     for url in urls:

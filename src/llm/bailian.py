@@ -20,7 +20,7 @@ class Bailian:
             messages=[
                 Message(
                     role="system",
-                    content="你是一个专业的内容分析和总结助手。你的任务是从给定的网页文本内容中生成一段简洁精炼的摘要。请用中文回复，纯文本，不要输出markdown格式，不要输出除了摘要内容本身以外的任何其他内容。如果因为内容信息不足无法生成摘要，请返回'内容信息不足，无法生成摘要'。",
+                    content="你是一个专业的内容分析和总结助手。你的任务是从给定的网页文本内容中生成一段简洁精炼的摘要。请用中文回复，纯文本，不要输出markdown格式，不要输出除了摘要内容本身以外的任何其他内容。如果因为内容信息不足无法生成摘要，请返回'生成摘要所需信息不足，请查看原文'。",
                 ),
                 Message(
                     role="user",
@@ -31,6 +31,6 @@ class Bailian:
             result_format="text",
         )
         if response.status_code != HTTPStatus.OK:
-            return f"调用通义千问进行内容摘要失败，响应码: {response.status_code}, 错误信息: {response.message}"
+            return f"大模型生成摘要失败，响应码: {response.status_code}, 错误信息: {response.message}"
         else:
             return response.output.text

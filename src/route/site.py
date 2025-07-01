@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from database.models import CrawlType, Site, SiteCategory
+from database.models import CrawlType, DomainBlacklist, Site, SiteCategory
 from route.response import Response
 from settings import get_settings, Settings
 
@@ -71,3 +71,22 @@ async def add_site(request: SiteAddRequest, token: str = Query(..., description=
         return Response.success(site.id)
     except Exception as e:
         return Response.fail(f"添加站点失败: {e}")
+
+
+class DomainBlacklistAddRequest(BaseModel):
+    domain: str = Field(..., description="域名")
+
+@site_router.post("/domain_blacklist/add", description="添加域名黑名单")
+async def add_domain_blacklist(request: DomainBlacklistAddRequest, token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[int]:
+    if token != settings.admin_auth_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        exist = await DomainBlacklist.filter(domain=request.domain).exists()
+        if exist:
+            return Response.fail("域名已存在")
+
+        domain_blacklist = await DomainBlacklist.create(domain=request.domain)
+        return Response.success(domain_blacklist.id)
+    except Exception as e:
+        return Response.fail(f"添加域名黑名单失败: {e}")
