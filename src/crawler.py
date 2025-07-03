@@ -3,7 +3,7 @@ import time
 
 from nats.aio.client import Client
 from nats.aio.subscription import Subscription
-from crawl.util import duplicate_url
+from crawl.util import duplicate_url, is_same_domain
 from database.models import CrawlType
 from pubsub.connection import QUEUE_CRAWL_DETAILPAGE, QUEUE_CRAWL_LISTPAGE, QUEUE_CRAWL_PAGECONTENT, MsgQueue
 from pubsub.msg import CrawlDetailPageMsg, CrawlListPageMsg, CrawlPageContentMsg
@@ -87,12 +87,12 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
         case CrawlType.JSON:
             pages = await crawl_list_using_json(msg.url, msg.rule)
     end_time = time.time()
-    crawl_logger.info(f"CrawlList time: {end_time - start_time:.3f} seconds, url: {msg.url}, pages: {len(pages)}")
+    crawl_logger.info(f"CrawlList time: {end_time - start_time:.3f}s, {msg.site_name}, {msg.url}, pages: {len(pages)}")
     if len(pages) == 0:
         return []
 
     deduplicated_pages = await duplicate_url(settings.url_deduplicate_api, pages)
-    crawl_logger.info(f"CrawlList deduplicated: url: {msg.url}, pages: {len(deduplicated_pages)}")
+    crawl_logger.info(f"CrawlList deduplicated: {msg.site_name}, {msg.url}, pages: {len(deduplicated_pages)}")
     if len(deduplicated_pages) == 0:
         return []
 
@@ -102,7 +102,7 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
             site_name=msg.site_name,
             url=url,
             title=title,
-            crawl_detail_type=msg.crawl_detail_type,
+            crawl_detail_type=CrawlType.HTML_DYNAMIC if not is_same_domain(url, msg.url) else msg.crawl_detail_type, # 非当前域名的url(外链), 正文页爬取类型设置为html_dynamic
             first_crawl=msg.first_crawl,
         )
         for url, title in deduplicated_pages.items()
@@ -118,7 +118,7 @@ async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
         case CrawlType.HTML_STATIC:
             detail = await crawl_detail_using_http(msg.url)
     end_time = time.time()
-    crawl_logger.info(f"CrawlDetail time: {end_time - start_time:.3f} seconds, url: {msg.url}")
+    crawl_logger.info(f"CrawlDetail time: {end_time - start_time:.3f}s, {msg.site_name}, {msg.url}")
 
     return CrawlPageContentMsg(
         site_id=msg.site_id,

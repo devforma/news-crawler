@@ -20,7 +20,7 @@ run_config = CrawlerRunConfig(
     cache_mode=CacheMode.DISABLED,
     page_timeout=PAGE_TIMEOUT,
     delay_before_return_html=4,
-    magic=True,
+    # magic=True,
 )
 
 # 爬取列表页

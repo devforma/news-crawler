@@ -18,7 +18,7 @@ async def schedule(token: str = Query(..., description="授权令牌"), settings
     try:
         pub_conn = await MsgQueue.connect(settings)
 
-        sites = await Site.all()
+        sites = await Site.all().order_by("-id")
         for site in sites:
             await pub_conn.publish(
                 subject=QUEUE_CRAWL_LISTPAGE,

@@ -1,5 +1,5 @@
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from util.http import HttpClient
 from log.logger import crawl_logger
@@ -70,3 +70,9 @@ async def duplicate_url(deduplicate_api: str, urls: dict[str, str]) -> dict[str,
     except Exception as e:
         crawl_logger.error(f"Duplicate url error: {e}")
         return {}
+
+# 判断两个url是否是同一个域名
+def is_same_domain(url1: str, url2: str) -> bool:
+    url1_parsed = urlparse(url1)
+    url2_parsed = urlparse(url2)
+    return url1_parsed.netloc == url2_parsed.netloc
