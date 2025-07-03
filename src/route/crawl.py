@@ -35,9 +35,8 @@ async def schedule(token: str = Query(..., description="授权令牌"), settings
             )
 
             # 更新站点最近爬取时间
-            if site.crawled_at is None:
-                site.crawled_at = datetime.now()
-                await site.save()
+            site.crawled_at = datetime.now()
+            await site.save()
 
     except Exception as e:
         server_logger.error(f"Schedule crawl error: {e}")
