@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import json
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, JsonCssExtractionStrategy, CrawlerRunConfig, LXMLWebScrapingStrategy
 from playwright.async_api import BrowserContext, Page, Route
-from crawl.util import browser_blacklist_url_keys, filter_links, generate_extraction_schema
+from crawl.util import DetailResult, browser_blacklist_url_keys, filter_links, generate_extraction_schema
 from log.logger import crawl_logger
 from trafilatura import extract, extract_metadata
 
@@ -44,11 +44,6 @@ async def crawl_list_using_browser(url: str, rule: list[str]) -> dict[str, str]:
             crawl_logger.error(f"CrawlList failed: {url} {result.error_message}")
         return {}
 
-
-@dataclass
-class DetailResult:
-    content: str
-    date: str
 
 # 爬取详情页
 async def crawl_detail_using_browser(url: str) -> DetailResult:

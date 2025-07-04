@@ -1,8 +1,15 @@
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from util.http import HttpClient
 from log.logger import crawl_logger
+
+@dataclass
+class DetailResult:
+    content: str
+    date: str
+
 
 # 浏览器黑名单域名列表
 browser_blacklist_url_keys = [

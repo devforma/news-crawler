@@ -3,7 +3,7 @@ import time
 
 from nats.aio.client import Client
 from nats.aio.subscription import Subscription
-from crawl.util import duplicate_url, is_same_domain
+from crawl.util import DetailResult, duplicate_url, is_same_domain
 from database.models import CrawlType
 from pubsub.connection import QUEUE_CRAWL_DETAILPAGE, QUEUE_CRAWL_LISTPAGE, QUEUE_CRAWL_PAGECONTENT, MsgQueue
 from pubsub.msg import CrawlDetailPageMsg, CrawlListPageMsg, CrawlPageContentMsg
@@ -63,6 +63,9 @@ async def crawl_list_page_loop(list_sub: Subscription, pub_conn: Client):
                 await pub_conn.publish(QUEUE_CRAWL_DETAILPAGE, detail_msg.model_dump_json().encode("utf-8"))
         except Exception as e:
             crawl_logger.error(f"CrawlList loop error: {e}")
+        finally:
+            # return # 测试用,只抓取第一个列表页
+            await asyncio.sleep(1)
 
 # 爬取正文页
 async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
@@ -96,17 +99,25 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
     if len(deduplicated_pages) == 0:
         return []
 
-    return [
-        CrawlDetailPageMsg(
-            site_id=msg.site_id,
-            site_name=msg.site_name,
-            url=url,
-            title=title,
-            crawl_detail_type=CrawlType.HTML_DYNAMIC if not is_same_domain(url, msg.url) else msg.crawl_detail_type, # 非当前域名的url(外链), 正文页爬取类型设置为html_dynamic
-            first_crawl=msg.first_crawl,
-        )
-        for url, title in deduplicated_pages.items()
-    ]
+    detail_msgs = []
+    for url, title in deduplicated_pages.items():
+        # 当列表页爬取类型是网页时, 对于非当前域名的url(外链), 正文页爬取类型设置为html_dynamic
+        if msg.crawl_list_type != CrawlType.JSON and not is_same_domain(url, msg.url): 
+            crawl_detail_type = CrawlType.HTML_DYNAMIC
+        else:
+            crawl_detail_type = msg.crawl_detail_type
+        
+        detail_msgs.append(CrawlDetailPageMsg(
+                site_id=msg.site_id,
+                site_name=msg.site_name,
+                url=url,
+                title=title,
+                crawl_detail_type=crawl_detail_type,
+                first_crawl=msg.first_crawl,
+                paywall=msg.paywall,
+            ))
+
+    return detail_msgs
 
 
 # 爬取正文页
@@ -128,6 +139,7 @@ async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
         date=detail.date,
         content=detail.content,
         first_crawl=msg.first_crawl,
+        paywall=msg.paywall,
     )
 
 

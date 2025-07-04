@@ -9,7 +9,7 @@ from crawl4ai import (
     LXMLWebScrapingStrategy,
 )
 from crawl4ai.async_crawler_strategy import AsyncHTTPCrawlerStrategy
-from crawl.util import filter_links, generate_extraction_schema
+from crawl.util import DetailResult, filter_links, generate_extraction_schema
 from log.logger import crawl_logger
 from trafilatura import extract, extract_metadata
 
@@ -51,14 +51,6 @@ async def crawl_list_using_http(url: str, rule: list[str]) -> dict[str, str]:
 
 
 # 爬取详情页
-
-
-@dataclass
-class DetailResult:
-    content: str
-    date: str
-
-
 async def crawl_detail_using_http(url: str) -> DetailResult:
     async with AsyncWebCrawler(crawler_strategy=AsyncHTTPCrawlerStrategy(browser_config=http_crawler_config)) as crawler:
         result = await crawler.arun(url, config=run_config)

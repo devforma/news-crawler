@@ -42,7 +42,10 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
 
             # 如果命中过滤关键词才进行保存
             if is_hit_keywords(page_content.title, page_content.content, content_filter_keyword):
-                summary = await Bailian.text_summary(page_content.title, page_content.content)
+                if page_content.paywall:
+                    summary = "网站包含付费订阅内容，请查看原文"
+                else:
+                    summary = await Bailian.text_summary(page_content.title, page_content.content)
                 page = await Page.create(
                     site_id=site_id,
                     title=page_content.title,
