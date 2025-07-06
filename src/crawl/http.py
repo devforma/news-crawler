@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from datetime import datetime
 import json
 from crawl4ai import (
     AsyncWebCrawler,
@@ -57,7 +57,7 @@ async def crawl_detail_using_http(url: str) -> DetailResult:
         if result.success:
             content = extract(result.html)
             metadata = extract_metadata(result.html)
-            return DetailResult(content=content, date=metadata.date or "")
+            return DetailResult(content=content, date=metadata.date or datetime.now().strftime("%Y-%m-%d"))
         else:
             crawl_logger.error(f"CrawlDetail failed: {url} {result.error_message}")
             return DetailResult(content="", date="")

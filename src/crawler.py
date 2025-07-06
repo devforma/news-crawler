@@ -3,7 +3,7 @@ import time
 
 from nats.aio.client import Client
 from nats.aio.subscription import Subscription
-from crawl.util import DetailResult, duplicate_url, is_same_domain
+from crawl.util import duplicate_url, is_same_domain
 from database.models import CrawlType
 from pubsub.connection import QUEUE_CRAWL_DETAILPAGE, QUEUE_CRAWL_LISTPAGE, QUEUE_CRAWL_PAGECONTENT, MsgQueue
 from pubsub.msg import CrawlDetailPageMsg, CrawlListPageMsg, CrawlPageContentMsg
@@ -64,8 +64,8 @@ async def crawl_list_page_loop(list_sub: Subscription, pub_conn: Client):
         except Exception as e:
             crawl_logger.error(f"CrawlList loop error: {e}")
         finally:
-            # return # 测试用,只抓取第一个列表页
-            await asyncio.sleep(1)
+            # return # 测试用,只抓取第一个列表页 
+            await asyncio.sleep(2)
 
 # 爬取正文页
 async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
@@ -77,7 +77,7 @@ async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
         except Exception as e:
             crawl_logger.error(f"CrawlDetail loop error: {e}")
         finally:
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
 
 # 爬取列表页
 async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:

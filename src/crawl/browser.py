@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from datetime import datetime
 import json
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, JsonCssExtractionStrategy, CrawlerRunConfig, LXMLWebScrapingStrategy
 from playwright.async_api import BrowserContext, Page, Route
@@ -53,7 +53,7 @@ async def crawl_detail_using_browser(url: str) -> DetailResult:
         if result.success:
             content = extract(result.html)
             metadata = extract_metadata(result.html)
-            return DetailResult(content=str(content), date=metadata.date or "")
+            return DetailResult(content=str(content), date=metadata.date or datetime.now().strftime("%Y-%m-%d"))
         else:
             crawl_logger.error(f"CrawlDetail failed: {url} {result.error_message}")
             return DetailResult(content="", date="")
