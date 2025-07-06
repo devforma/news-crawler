@@ -2,6 +2,6 @@
 
 cp -r ../src .
 
-docker build -t news-crawler:latest .
+docker build -t devforma/news-crawler:latest .
 
 rm -r ./src
