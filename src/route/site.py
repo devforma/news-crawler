@@ -84,7 +84,7 @@ async def add_site(request: SiteAddRequest, token: str = Query(..., description=
 
 
 class SubscribeAddRequest(BaseModel):
-    site_id: int = Field(..., description="站点ID")
+    site_ids: list[int] = Field(..., description="站点ID列表")
     user_id: str = Field(..., description="用户ID")
     filter_keywords: str = Field("", description="过滤关键词")
 
@@ -93,19 +93,25 @@ async def subscribe_site(request: SubscribeAddRequest, token: str = Query(..., d
     if token != settings.admin_auth_token:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    exist = await PushSubscription.filter(site_id=request.site_id, staff_number=request.user_id).exists()
-    if exist:
-        return Response.success(True)
+    if request.site_ids[0] == -1:
+        site_ids = await Site.all().values_list("id", flat=True)
+    else:
+        site_ids = request.site_ids
+
+    for site_id in site_ids:
+        exist = await PushSubscription.filter(site_id=site_id, staff_number=request.user_id).exists()
+        if exist:
+            continue
     
-    try:
-        await PushSubscription.create(
-            site_id=request.site_id,
-            staff_number=request.user_id,
-            filter_keywords=request.filter_keywords,
-        )
-        return Response.success(True)
-    except Exception as e:
-        return Response.fail(f"添加订阅失败: {e}")
+        try:
+            await PushSubscription.create(
+                site_id=site_id,
+                staff_number=request.user_id,
+                filter_keywords=request.filter_keywords,
+            )
+        except Exception as e:
+            return Response.fail(f"添加订阅失败: {e}")
+    return Response.success(True)
 
 
 

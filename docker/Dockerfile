@@ -7,7 +7,7 @@ COPY entrypoint.sh .
 
 RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list.d/debian.sources && \
     pip install --index-url https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt && \
-    playwright install --with-deps chromium && \
+    playwright install --with-deps --no-shell chromium && \
     rm -rf /var/lib/apt/lists/*
 
 COPY src/. .
