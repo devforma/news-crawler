@@ -4,7 +4,8 @@ from enum import Enum
 
 class SiteCategory(str, Enum):
     NEWS = "news"
-    POLICY = "policy"
+    ARTICLE = "article"
+    TALENT_POLICY = "talent_policy"
 
 class CrawlType(str, Enum):
     HTML_STATIC = "html_static"
@@ -30,12 +31,13 @@ class Site(models.Model):
 
 class Page(models.Model):
     id = fields.BigIntField(primary_key=True, generated=True)
-    site_id = fields.IntField(description="站点ID", index=True)
+    site: fields.ForeignKeyRelation[Site] = fields.ForeignKeyField("models.Site", related_name="pages", description="站点ID", db_index=True)
     title = fields.TextField(description="标题")
     url = fields.TextField(description="URL")
     summary = fields.TextField(description="摘要")
     date = fields.DatetimeField(description="日期")
     signature_id = fields.BigIntField(description="签名ID", index=True)
+    visible = fields.BooleanField(default=True, description="是否可见")
     created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
 
     class Meta:

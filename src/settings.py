@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     # dashscope
     dashscope_api_key: str = Field(description="Dashscope api key", default="")
+    dashscope_interpretation_app_id: str = Field(description="Dashscope interpretation app id", default="")
 
     # url deduplicate api
     url_deduplicate_api: str = Field(description="URL deduplicate api", default="")

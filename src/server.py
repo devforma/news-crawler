@@ -11,6 +11,7 @@ from llm.bailian import Bailian
 from log.logger import server_logger
 from pubsub.msg import CrawlPageContentMsg
 from route.crawl import crawl_router
+from route.post import post_router
 from route.site import site_router
 from settings import get_settings
 from middleware.log import AccessLogMiddleware
@@ -52,7 +53,8 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
                     url=page_content.url,
                     summary=summary,
                     date=page_content.date,
-                    signature_id=page_signature.id
+                    signature_id=page_signature.id,
+                    visible=True
                 )
 
                 await PageContent.create(
@@ -82,7 +84,7 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 初始化百炼
-    Bailian.init(app_settings.dashscope_api_key)
+    Bailian.init(app_settings.dashscope_api_key, app_settings.dashscope_interpretation_app_id)
 
     # 初始化钉钉
     await DingTalkClient.init(
@@ -111,6 +113,7 @@ app = FastAPI(lifespan=lifespan, title="资讯政策数据采集", description="
 app.add_middleware(AccessLogMiddleware)
 app.include_router(crawl_router)
 app.include_router(site_router)
+app.include_router(post_router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host=app_settings.api_server_host, port=app_settings.api_server_port, access_log=False)
