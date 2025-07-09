@@ -63,7 +63,7 @@ async def list_posts(
         query = query.filter(site__category=type)
 
     total = await query.count()
-    results = await query.order_by("-date").offset((page - 1) * page_size).limit(page_size).all().select_related("site")
+    results = await query.order_by("-id").offset((page - 1) * page_size).limit(page_size).all().select_related("site")
 
     # 中国时区
     china_timezone = dt.timezone(dt.timedelta(hours=8))
