@@ -46,7 +46,7 @@ async def crawl_list_using_browser(url: str, rule: list[str]) -> dict[str, str]:
 
 
 # 爬取详情页
-async def crawl_detail_using_browser(url: str) -> DetailResult:
+async def crawl_detail_using_browser(url: str) -> DetailResult | None:
     async with AsyncWebCrawler(config=browser_config) as crawler:
         crawler.crawler_strategy.set_hook("on_page_context_created", on_page_context_created)
         result = await crawler.arun(url, config=run_config)
@@ -56,7 +56,7 @@ async def crawl_detail_using_browser(url: str) -> DetailResult:
             return DetailResult(content=str(content), date=metadata.date or datetime.now().strftime("%Y-%m-%d"))
         else:
             crawl_logger.error(f"CrawlDetail failed: {url} {result.error_message}")
-            return DetailResult(content="", date="")
+            return None
 
 
 # 过滤无用资源请求

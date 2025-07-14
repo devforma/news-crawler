@@ -51,7 +51,7 @@ async def crawl_list_using_http(url: str, rule: list[str]) -> dict[str, str]:
 
 
 # 爬取详情页
-async def crawl_detail_using_http(url: str) -> DetailResult:
+async def crawl_detail_using_http(url: str) -> DetailResult | None:
     async with AsyncWebCrawler(crawler_strategy=AsyncHTTPCrawlerStrategy(browser_config=http_crawler_config)) as crawler:
         result = await crawler.arun(url, config=run_config)
         if result.success:
@@ -60,4 +60,4 @@ async def crawl_detail_using_http(url: str) -> DetailResult:
             return DetailResult(content=content, date=metadata.date or datetime.now().strftime("%Y-%m-%d"))
         else:
             crawl_logger.error(f"CrawlDetail failed: {url} {result.error_message}")
-            return DetailResult(content="", date="")
+            return None

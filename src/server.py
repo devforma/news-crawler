@@ -22,14 +22,6 @@ app_settings = get_settings()
 
 async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
     sub = await sub_conn.subscribe(QUEUE_CRAWL_PAGECONTENT, queue="workers")
-
-    sites = await Site.all()
-    content_filter_keywords = {site.id: site.content_filter_keywords for site in sites}
-
-    push_subscriptions = await PushSubscription.all()
-    push_filter_keywords = {f"{push_subscription.site_id}__{push_subscription.staff_number}": push_subscription.filter_keywords for push_subscription in push_subscriptions}
-    push_user_ids = {str(push_subscription.site_id): [push_subscription.staff_number] for push_subscription in push_subscriptions}
-
     async for msg in sub.messages:
         try:
             page_content = CrawlPageContentMsg.model_validate_json(msg.data.decode("utf-8"))
@@ -39,10 +31,10 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
 
             # 根据站点id获取过滤关键词
             site_id = page_content.site_id
-            content_filter_keyword = content_filter_keywords.get(site_id, "")
+            site = await Site.get(id=site_id).only("content_filter_keywords")
 
             # 如果命中过滤关键词才进行保存
-            if is_hit_keywords(page_content.title, page_content.content, content_filter_keyword):
+            if is_hit_keywords(page_content.title, page_content.content, site.content_filter_keywords):
                 if page_content.paywall:
                     summary = "网站包含付费订阅内容，请查看原文"
                 else:
@@ -67,17 +59,18 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
                     continue
 
                 # 非首次爬取, 根据推送过滤关键词进行推送
-                for user_id in push_user_ids.get(str(site_id), []):
+                sub_users = await PushSubscription.filter(site_id=site_id).all()
+                for sub_user in sub_users:
                     # 命中推送过滤关键词才进行推送
-                    push_filter_keyword = push_filter_keywords.get(f"{site_id}__{user_id}", "")
-                    if is_hit_keywords(page_content.title, page_content.content, push_filter_keyword):
+                    if is_hit_keywords(page_content.title, page_content.content, sub_user.filter_keywords):
                         await DingTalkClient.send_message(
-                            user_id=user_id,
+                            user_id=sub_user.staff_number,
                             title=page_content.title,
                             summary=summary,
                             url=page_content.url,
                             source=page_content.site_name,
                         )
+                        server_logger.info(f"Push message to {sub_user.staff_number}: {page_content.title}")
         except Exception as e:
             server_logger.error(f"Subscribe crawl page content error: {e}")
 

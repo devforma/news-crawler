@@ -64,7 +64,7 @@ async def crawl_list_page_loop(list_sub: Subscription, pub_conn: Client):
         except Exception as e:
             crawl_logger.error(f"CrawlList loop error: {e}")
         finally:
-            # return # 测试用,只抓取第一个列表页 
+            # return # 测试用,只抓取第一个列表页
             await asyncio.sleep(2)
 
 # 爬取正文页
@@ -73,7 +73,8 @@ async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
         try:
             msg = CrawlDetailPageMsg.model_validate_json(msg.data.decode("utf-8"))
             content_msg = await crawl_detail(msg)
-            await pub_conn.publish(QUEUE_CRAWL_PAGECONTENT, content_msg.model_dump_json().encode("utf-8"))
+            if content_msg is not None:
+                await pub_conn.publish(QUEUE_CRAWL_PAGECONTENT, content_msg.model_dump_json().encode("utf-8"))
         except Exception as e:
             crawl_logger.error(f"CrawlDetail loop error: {e}")
         finally:
@@ -121,7 +122,7 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
 
 
 # 爬取正文页
-async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
+async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg | None:
     start_time = time.time()
     match msg.crawl_detail_type:
         case CrawlType.HTML_DYNAMIC:
@@ -130,6 +131,9 @@ async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg:
             detail = await crawl_detail_using_http(msg.url)
     end_time = time.time()
     crawl_logger.info(f"CrawlDetail time: {end_time - start_time:.3f}s, {msg.site_name}, {msg.url}")
+
+    if detail is None:
+        return None
 
     return CrawlPageContentMsg(
         site_id=msg.site_id,
