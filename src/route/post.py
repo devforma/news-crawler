@@ -75,7 +75,8 @@ async def list_posts(
             content="",
             url=result.url,
             summary=result.summary,
-            publish_time=result.date.astimezone(china_timezone).strftime("%Y-%m-%d") if result.date else ""
+            # 展示日期使用爬取时间, 页面解析得到的日期不准
+            publish_time=result.created_at.astimezone(china_timezone).strftime("%Y-%m-%d") if result.created_at else ""
         ) for result in results]
 
     return Response(success=True, error_message="", data=posts, pagination=Pagination(page=page, page_size=page_size, total=total))
