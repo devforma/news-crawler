@@ -135,7 +135,7 @@ async def add_domain_blacklist(request: DomainBlacklistAddRequest, token: str = 
 
 
 @site_router.post("/conversation", description="通过对话添加站点")
-async def add_site_by_conversation(request: Request, settings: Settings = Depends(get_settings)):
+async def add_site_by_conversation(request: Request):
     try:
         req = await request.json()
         stuff_number = req.get("senderStaffId")
