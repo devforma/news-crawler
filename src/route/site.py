@@ -148,18 +148,28 @@ async def add_site_by_conversation(request: Request, settings: Settings = Depend
             content=content,
         )
 
+        # 发送消息给管理员
         await DingTalkClient.send_message(
             user_id="362037",
             title=f"收到{sender_name}的采集请求",
-            summary=f"工号: {stuff_number}\n内容: {content}",
+            summary=f"工号: {stuff_number}\n\n  内容: {content}",
             url="",
             source="采集请求",
+        )
+
+        # 发送示例消息
+        await DingTalkClient.send_message(
+            user_id=stuff_number,
+            title="【示例消息】关于实施鼓励外商投资企业境内再投资若干措施的通知(发改外资〔2025〕928号)",
+            summary="为贯彻落实党中央和国务院决策部署，更大力度吸引和利用外资，鼓励外商投资企业境内再投资，国家发展改革委等部门发布通知，明确多项政策措施。包括建立再投资项目库、灵活用地方式、优化行业准入许可办理流程、落实税收支持政策、享受进口设备支持、允许外汇资金境内划转、简化再投资登记手续、优化关联股东贷款和“熊猫债”管理流程、鼓励金融机构创新金融服务、推动信息报告试点以及优化外商投资评价方式等。这些措施旨在降低外商投资企业再投资成本，提升投资便利性，促进更多有效投资。",
+            url="https://www.ndrc.gov.cn/xxgk/zcfb/tz/202507/t20250718_1399285.html",
+            source="国家发改委",
         )
 
         return {
            "msgtype": "text",
             "text": {
-                "content": "采集请求已完成提交"
+                "content": "信息采集请求已完成提交，未来新内容消息格式参考示例消息"
             }
         }
     except Exception:
