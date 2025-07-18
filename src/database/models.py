@@ -79,3 +79,14 @@ class DomainBlacklist(models.Model):
     class Meta:
         table = "domain_blacklist"
         table_description = "域名黑名单"
+
+class CrawlRequest(models.Model):
+    id = fields.IntField(primary_key=True, generated=True)
+    stuff_name = fields.TextField(description="工号")
+    stuff_number = fields.CharField(max_length=16, description="工号")
+    content = fields.TextField(description="内容")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+
+    class Meta:
+        table = "crawl_requests"
+        table_description = "采集请求"

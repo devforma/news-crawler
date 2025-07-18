@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
-from database.models import CrawlType, DomainBlacklist, PushSubscription, Site, SiteCategory
+from database.models import CrawlRequest, CrawlType, DomainBlacklist, PushSubscription, Site, SiteCategory
+from dingtalk.client import DingTalkClient
 from route.response import Response
 from settings import get_settings, Settings
 
@@ -114,7 +115,6 @@ async def subscribe_site(request: SubscribeAddRequest, token: str = Query(..., d
     return Response.success(True)
 
 
-
 class DomainBlacklistAddRequest(BaseModel):
     domain: str = Field(..., description="域名")
 
@@ -132,3 +132,40 @@ async def add_domain_blacklist(request: DomainBlacklistAddRequest, token: str = 
         return Response.success(domain_blacklist.id)
     except Exception as e:
         return Response.fail(f"添加域名黑名单失败: {e}")
+
+
+@site_router.post("/conversation", description="通过对话添加站点")
+async def add_site_by_conversation(request: Request, settings: Settings = Depends(get_settings)):
+    try:
+        req = await request.json()
+        stuff_number = req.get("senderStaffId")
+        sender_name = req.get("senderNick")
+        content = req.get("text").get("content")
+
+        await CrawlRequest.create(
+            stuff_name=sender_name,
+            stuff_number=stuff_number,
+            content=content,
+        )
+
+        await DingTalkClient.send_message(
+            user_id="362037",
+            title=f"收到{sender_name}的采集请求",
+            summary=f"工号: {stuff_number}\n内容: {content}",
+            url="",
+            source="采集请求",
+        )
+
+        return {
+           "msgtype": "text",
+            "text": {
+                "content": "采集请求已完成提交"
+            }
+        }
+    except Exception:
+        return {
+           "msgtype": "text",
+            "text": {
+                "content": "对话内容解析失败"
+            }
+        }
