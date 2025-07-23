@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 import hashlib
 from database.models import DomainBlacklist, Page, PageSignature, Site
 from log.logger import server_logger
@@ -71,7 +72,7 @@ async def sync_articles_to_oss(token: str = Query(..., description="授权令牌
     return Response.success(True)
 
 
-@crawl_router.get("/today_articles", description="获取今日文章")
+@crawl_router.get("/today_articles", description="获取今日文章", response_class=PlainTextResponse)
 async def today_articles() -> str:
     site_ids = await Site.filter(send_to_aiagent=True).values_list("id", flat=True)
     today = datetime.now().date()
