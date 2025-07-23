@@ -1231,7 +1231,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "alibabacloud-dingtalk", specifier = ">=2.2.19" },
-    { name = "crawl4ai", specifier = ">=0.6.3" },
+    { name = "crawl4ai", specifier = "==0.6.3" },
     { name = "dashscope", specifier = ">=1.23.6" },
     { name = "fastapi", specifier = ">=0.115.13" },
     { name = "jsonpath-ng", specifier = ">=1.7.0" },
