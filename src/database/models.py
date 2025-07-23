@@ -22,6 +22,7 @@ class Site(models.Model):
     detailpage_crawl_type = fields.CharEnumField(enum_type=CrawlType, default=CrawlType.HTML_STATIC, description="详情页爬取类型")
     content_filter_keywords = fields.TextField(default="", description="内容过滤关键词")
     paywall = fields.BooleanField(default=False, description="是否付费阅读")
+    send_to_aiagent = fields.BooleanField(default=False, description="是否用于AI agent")
     created_at = fields.DatetimeField(auto_now_add=True)
     crawled_at = fields.DatetimeField(null=True, description="最近爬取时间")
 

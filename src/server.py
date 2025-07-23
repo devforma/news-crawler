@@ -9,6 +9,7 @@ from database.models import Page, PageContent, PageSignature, PushSubscription, 
 from dingtalk.client import DingTalkClient
 from llm.bailian import Bailian
 from log.logger import server_logger
+from oss.store import OSS
 from pubsub.msg import CrawlPageContentMsg
 from route.crawl import crawl_router
 from route.post import post_router
@@ -78,6 +79,15 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
 async def lifespan(app: FastAPI):
     # 初始化百炼
     Bailian.init(app_settings.dashscope_api_key, app_settings.dashscope_interpretation_app_id)
+
+    # 初始化OSS
+    OSS.init(
+        endpoint=app_settings.push_oss_endpoint,
+        region=app_settings.push_oss_region,
+        bucket=app_settings.push_oss_bucket,
+        accesskey_id=app_settings.push_oss_accesskey_id,
+        accesskey_secret=app_settings.push_oss_accesskey_secret
+    )
 
     # 初始化钉钉
     await DingTalkClient.init(

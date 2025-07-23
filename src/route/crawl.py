@@ -1,8 +1,9 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 import hashlib
-from database.models import DomainBlacklist, PageSignature, Site
+from database.models import DomainBlacklist, Page, PageSignature, Site
 from log.logger import server_logger
+from oss.store import OSS
 from pubsub.connection import MsgQueue, QUEUE_CRAWL_LISTPAGE
 from pubsub.msg import CrawlListPageMsg
 from route.response import Response
@@ -46,6 +47,51 @@ async def schedule(token: str = Query(..., description="授权令牌"), settings
             await pub_conn.close()
 
     return Response.success(True)
+
+
+@crawl_router.post("/sync_articles_to_oss", description="同步文章到OSS")
+async def sync_articles_to_oss(token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[bool]:
+    if token != settings.admin_auth_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    site_ids = await Site.filter(send_to_aiagent=True).values_list("id", flat=True)
+    today = datetime.now().date()
+    pages = await Page.filter(
+        site_id__in=site_ids, 
+        visible=True,
+        date__gte=datetime.combine(today, datetime.min.time()),
+        date__lte=datetime.combine(today, datetime.max.time())
+    ).all().select_related("site")
+
+    today_str = today.strftime("%Y-%m-%d")
+    for page in pages:
+        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}"
+        await OSS.upload(f"articles/{today_str}_{page.id}.txt", content)
+
+    return Response.success(True)
+
+
+@crawl_router.get("/today_articles", description="获取今日文章")
+async def today_articles() -> str:
+    site_ids = await Site.filter(send_to_aiagent=True).values_list("id", flat=True)
+    today = datetime.now().date()
+    pages = await Page.filter(
+        site_id__in=site_ids, 
+        visible=True,
+        date__gte=datetime.combine(today, datetime.min.time()),
+        date__lte=datetime.combine(today, datetime.max.time())
+    ).all().select_related("site")
+
+    contents = []
+    for page in pages:
+        if page.summary.find("大模型生成摘要失败") != -1:
+            continue
+
+        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}"
+        contents.append(content)
+
+    return "\n\n\n\n".join(contents)
+
 
 @crawl_router.post("/deduplicate", description="爬取页面去重")
 async def deduplicate(urls: list[str]) -> Response[list[str]]:

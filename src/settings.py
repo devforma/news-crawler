@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     # url deduplicate api
     url_deduplicate_api: str = Field(description="URL deduplicate api", default="")
 
+    # oss
+    push_oss_accesskey_id: str = Field(description="OSS access key id", default="")
+    push_oss_accesskey_secret: str = Field(description="OSS access key secret", default="")
+    push_oss_bucket: str = Field(description="OSS bucket name", default="")
+    push_oss_endpoint: str = Field(description="OSS endpoint", default="")
+    push_oss_region: str = Field(description="OSS region", default="")
+
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
