@@ -16,6 +16,21 @@ class Bailian:
         cls._api_key = api_key
         cls._interpretation_app_id = interpretation_app_id
 
+
+    @classmethod
+    async def trigger_agent(cls, api_key:str, app_id: str) -> str:
+        res = await asyncio.to_thread(dashscope.Application.call,
+            app_id=app_id,
+            api_key=api_key,
+            prompt="触发",
+            stream=False,
+        )
+
+        if res.status_code != HTTPStatus.OK:
+            return f"大模型调用失败，响应码: {res.status_code}, 错误信息: {res.message}"
+        else:
+            return res.output.text
+
     @classmethod
     async def text_summary(cls, title: str, content: str) -> str:
         if content == "":

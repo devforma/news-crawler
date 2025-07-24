@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 import hashlib
 from database.models import DomainBlacklist, Page, PageSignature, Site
+from llm.bailian import Bailian
 from log.logger import server_logger
 from oss.store import OSS
 from pubsub.connection import MsgQueue, QUEUE_CRAWL_LISTPAGE
@@ -95,6 +96,17 @@ async def today_articles() -> str:
         contents.append(content)
 
     return "\n\n\n\n".join(contents)
+
+
+@crawl_router.post("/trigger_agent", description="触发AIAgent")
+async def trigger_agent(token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)):
+    if token != settings.admin_auth_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    api_key = "sk-42bca06dcba54a10a3bb4f6c133f449f"
+    app_id = "c5fb1a62f20a4df288b076752fc00bd1"
+    result = await Bailian.trigger_agent(api_key, app_id)
+    return Response.success(result)
 
 
 @crawl_router.post("/deduplicate", description="爬取页面去重")
