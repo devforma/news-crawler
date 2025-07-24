@@ -17,6 +17,7 @@ browser_blacklist_url_keys = [
     "doubleclick.net",
     "ads.google.com",
     "hm.baidu.com",
+    "fwl.mot.gov.cn/jubac/sync/detailcollect.do", # 交通运输部信息收集, 请求会超时
 ]
 
 def generate_extraction_schema(anchor_selectors: list[str]) -> dict[str, Any]:
