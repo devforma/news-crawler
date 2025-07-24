@@ -1,4 +1,5 @@
 from datetime import datetime
+import urllib.parse
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 import hashlib
@@ -66,7 +67,8 @@ async def sync_articles_to_oss(token: str = Query(..., description="授权令牌
 
     today_str = today.strftime("%Y-%m-%d")
     for page in pages:
-        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}"
+        summary_url = f"https://pre-assistant-voice-ga.alibaba-inc.com/writer?source_link={urllib.parse.quote_plus(page.url)}"
+        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}\n\n详细摘要地址: {summary_url}"
         await OSS.upload(f"articles/{today_str}_{page.id}.txt", content)
 
     return Response.success(True)
@@ -87,8 +89,9 @@ async def today_articles() -> str:
     for page in pages:
         if page.summary.find("大模型生成摘要失败") != -1:
             continue
-
-        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}"
+        
+        summary_url = f"https://pre-assistant-voice-ga.alibaba-inc.com/writer?source_link={urllib.parse.quote_plus(page.url)}"
+        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}\n\n详细摘要地址: {summary_url}"
         contents.append(content)
 
     return "\n\n\n\n".join(contents)
