@@ -83,13 +83,14 @@ async def crawl_detail_page_loop(detail_sub: Subscription, pub_conn: Client):
 # 爬取列表页
 async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
     start_time = time.time()
+    display_url_map = {}
     match msg.crawl_list_type:
         case CrawlType.HTML_DYNAMIC:
             pages = await crawl_list_using_browser(msg.url, msg.rule)
         case CrawlType.HTML_STATIC:
             pages = await crawl_list_using_http(msg.url, msg.rule)
         case CrawlType.JSON:
-            pages = await crawl_list_using_json(msg.url, msg.rule)
+            pages, display_url_map = await crawl_list_using_json(msg.url, msg.rule)
     end_time = time.time()
     crawl_logger.info(f"CrawlList time: {end_time - start_time:.3f}s, {msg.site_name}, {msg.url}, pages: {len(pages)}")
     if len(pages) == 0:
@@ -112,6 +113,7 @@ async def crawl_list(msg: CrawlListPageMsg) -> list[CrawlDetailPageMsg]:
                 site_id=msg.site_id,
                 site_name=msg.site_name,
                 url=url,
+                display_url=display_url_map.get(url, url),
                 title=title,
                 crawl_detail_type=crawl_detail_type,
                 first_crawl=msg.first_crawl,
@@ -139,6 +141,7 @@ async def crawl_detail(msg: CrawlDetailPageMsg) -> CrawlPageContentMsg | None:
         site_id=msg.site_id,
         site_name=msg.site_name,
         url=msg.url,
+        display_url=msg.display_url,
         title=msg.title,
         date=detail.date,
         content=detail.content,

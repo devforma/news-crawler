@@ -1,3 +1,4 @@
+import dis
 from pydantic import BaseModel
 
 from database.models import CrawlType
@@ -20,6 +21,7 @@ class CrawlDetailPageMsg(Msg):
     site_name: str
     title: str
     url: str
+    display_url: str
     crawl_detail_type: CrawlType
     first_crawl: bool
     paywall: bool
@@ -29,6 +31,7 @@ class CrawlPageContentMsg(Msg):
     site_name: str
     title: str
     url: str
+    display_url: str
     date: str
     content: str
     paywall: bool

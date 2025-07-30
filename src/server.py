@@ -44,6 +44,7 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
                     site_id=site_id,
                     title=page_content.title,
                     url=page_content.url,
+                    display_url=page_content.display_url if page_content.display_url != "" else page_content.url,
                     summary=summary,
                     date=page_content.date,
                     signature_id=page_signature.id,
@@ -68,7 +69,7 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
                             user_id=sub_user.staff_number,
                             title=page_content.title,
                             summary=summary,
-                            url=page_content.url,
+                            url=page_content.display_url if page_content.display_url != "" else page_content.url,
                             source=page_content.site_name,
                         )
                         server_logger.info(f"Push message to {sub_user.staff_number}: {page_content.title}")

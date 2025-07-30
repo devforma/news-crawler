@@ -35,6 +35,7 @@ class Page(models.Model):
     site: fields.ForeignKeyRelation[Site] = fields.ForeignKeyField("models.Site", related_name="pages", description="站点ID", db_index=True)
     title = fields.TextField(description="标题")
     url = fields.TextField(description="URL")
+    display_url = fields.TextField(description="显示URL")
     summary = fields.TextField(description="摘要")
     date = fields.DatetimeField(description="日期")
     signature_id = fields.BigIntField(description="签名ID", index=True)

@@ -68,8 +68,8 @@ async def sync_articles_to_oss(token: str = Query(..., description="授权令牌
 
     today_str = today.strftime("%Y-%m-%d")
     for page in pages:
-        summary_url = f"https://pre-assistant-voice-ga.alibaba-inc.com/weekly?source_link={urllib.parse.quote_plus(page.url)}"
-        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}\n\n详细摘要地址: {summary_url}"
+        summary_url = f"https://pre-assistant-voice-ga.alibaba-inc.com/weekly?source_link={urllib.parse.quote_plus(page.display_url)}"
+        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.display_url}\n\n摘要: {page.summary}\n\n详细摘要地址: {summary_url}"
         await OSS.upload(f"articles/{today_str}_{page.id}.txt", content)
 
     return Response.success(True)
@@ -91,8 +91,8 @@ async def today_articles() -> str:
         if page.summary.find("大模型生成摘要失败") != -1:
             continue
         
-        summary_url = f"https://pre-assistant-voice-ga.alibaba-inc.com/weekly?source_link={urllib.parse.quote_plus(page.url)}"
-        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.url}\n\n摘要: {page.summary}\n\n详细摘要地址: {summary_url}"
+        summary_url = f"https://pre-assistant-voice-ga.alibaba-inc.com/weekly?source_link={urllib.parse.quote_plus(page.display_url)}"
+        content = f"标题: {page.title}\n\n日期: {page.date.strftime("%Y-%m-%d")}\n\n来源: {page.site.name}\n\n网址: {page.display_url}\n\n摘要: {page.summary}\n\n详细摘要地址: {summary_url}"
         contents.append(content)
 
     return "\n\n\n\n".join(contents)
