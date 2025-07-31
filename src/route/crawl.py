@@ -76,7 +76,7 @@ async def sync_articles_to_oss(token: str = Query(..., description="授权令牌
 
 
 @crawl_router.get("/today_articles", description="获取今日文章", response_class=PlainTextResponse)
-async def today_articles() -> str:
+async def today_articles(chunk: int = Query(1, description="分块")) -> str:
     site_ids = await Site.filter(send_to_aiagent=True).values_list("id", flat=True)
     today = datetime.now().date()
     pages = await Page.filter(
@@ -84,10 +84,18 @@ async def today_articles() -> str:
         visible=True,
         date__gte=datetime.combine(today, datetime.min.time()),
         date__lte=datetime.combine(today, datetime.max.time())
-    ).all().select_related("site")
+    ).order_by("-id").all().select_related("site")
 
     contents = []
-    for page in pages:
+
+    # 对pages分2个chunk
+    chunks = [pages[0:len(pages)//2], pages[len(pages)//2:]]
+    if chunk == 1:
+        pages_chunk = chunks[0]
+    else:
+        pages_chunk = chunks[1]
+
+    for page in pages_chunk:
         if page.summary.find("大模型生成摘要失败") != -1:
             continue
         
