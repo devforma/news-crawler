@@ -1,9 +1,13 @@
+import datetime as dt
 from datetime import datetime
 import urllib.parse
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 import hashlib
+
+from pydantic import BaseModel, Field
 from database.models import DomainBlacklist, Page, PageSignature, Site
+from llm import bailian
 from llm.bailian import Bailian
 from log.logger import server_logger
 from oss.store import OSS
@@ -73,6 +77,43 @@ async def sync_articles_to_oss(token: str = Query(..., description="授权令牌
         await OSS.upload(f"articles/{today_str}_{page.id}.txt", content)
 
     return Response.success(True)
+
+
+@crawl_router.get("/get_articles", description="获取文章")
+async def get_articles(start_date: str = Query(..., description="开始日期"), end_date: str = Query(..., description="结束日期")) -> Response[list[dict]]:
+    site_ids = await Site.filter(send_to_aiagent=True).values_list("id", flat=True)
+    pages = await Page.filter(
+        site_id__in=site_ids, 
+        visible=True,
+        created_at__gte=datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S"),
+        created_at__lte=datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
+    ).order_by("-id").all().select_related("site")
+
+
+    china_timezone = dt.timezone(dt.timedelta(hours=8))
+    contents = []
+    for page in pages:
+        contents.append({
+            "id": str(page.id),
+            "title": page.title,
+            "publish_time": page.created_at.astimezone(china_timezone).strftime("%Y-%m-%d %H:%M:%S"),
+            "source": page.site.name,
+            "url": page.display_url,
+            "summary": page.summary,
+        })
+
+    return Response.success(contents)
+
+
+class SummarizeArticleRequest(BaseModel):
+    title: str = Field(..., description="标题")
+    content: str = Field(..., description="内容")
+
+
+@crawl_router.post("/summarize_article", description="总结文章")
+async def summarize_article(summarize_request: SummarizeArticleRequest = Body(..., description="总结文章请求")) -> Response[str]:
+    result = await Bailian.text_summary(summarize_request.title, summarize_request.content)
+    return Response.success(result)
 
 
 @crawl_router.get("/today_articles", description="获取今日文章", response_class=PlainTextResponse)
