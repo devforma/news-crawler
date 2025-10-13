@@ -27,22 +27,44 @@ def generate_extraction_schema(anchor_selectors: list[str]) -> dict[str, Any]:
     }
     
     for i, anchor_selector in enumerate(anchor_selectors):
-        schema["fields"].append({
-            "name": f"list-{i}",
-            "type": "list",
-            "selector": anchor_selector,
-            "fields": [
-                {
-                    "name": "title",
-                    "type": "text",
-                },
-                {
-                    "name": "url",
-                    "type": "attribute",
-                    "attribute": "href",
-                }
-            ]
-        })
+        if "|" in anchor_selector:
+            new_anchor_selector = anchor_selector.split("|")[0].strip()
+            title_selector = anchor_selector.split("|")[1].strip()
+
+            schema["fields"].append({
+                "name": f"list-{i}",
+                "type": "list",
+                "selector": new_anchor_selector,
+                "fields": [
+                    {
+                        "name": "title",
+                        "type": "text",
+                        "selector": title_selector,
+                    },
+                    {
+                        "name": "url",
+                        "type": "attribute",
+                        "attribute": "href",
+                    }
+                ]
+            })
+        else:
+            schema["fields"].append({
+                "name": f"list-{i}",
+                "type": "list",
+                "selector": anchor_selector,
+                "fields": [
+                    {
+                        "name": "title",
+                        "type": "text",
+                    },
+                    {
+                        "name": "url",
+                        "type": "attribute",
+                        "attribute": "href",
+                    }
+                ]
+            })
 
     return schema
 
