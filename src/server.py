@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -62,7 +63,14 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
 
                 # 非首次爬取, 根据推送过滤关键词进行推送
                 sub_users = await PushSubscription.filter(site_id=site_id).all()
+
+                weekday = datetime.now().weekday()
+                exclude_sub_users = ["348170", "355211", "112293", "163986"] # 特定用户周六、周日不推送
                 for sub_user in sub_users:
+                    # 对特定用户周六、周日不推送
+                    if weekday in [5, 6] and sub_user.staff_number in exclude_sub_users:
+                        continue
+
                     # 命中推送过滤关键词才进行推送
                     if is_hit_keywords(page_content.title, page_content.content, sub_user.filter_keywords):
                         await DingTalkClient.send_message(
