@@ -65,10 +65,11 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
                 sub_users = await PushSubscription.filter(site_id=site_id).all()
 
                 weekday = datetime.now().weekday()
-                exclude_sub_users = ["348170", "355211", "112293", "163986"] # 特定用户周六、周日不推送
+                hour = datetime.now().hour
+                exclude_sub_users = ["348170", "355211", "112293", "163986"]
                 for sub_user in sub_users:
-                    # 对特定用户周六、周日不推送
-                    if weekday in [5, 6] and sub_user.staff_number in exclude_sub_users:
+                    # 对特定用户周六、周日不推送，周一至周五9-18时推送
+                    if (weekday in [5, 6] or (weekday in [0, 1, 2, 3, 4] and (hour < 9 or hour > 18))) and sub_user.staff_number in exclude_sub_users:
                         continue
 
                     # 命中推送过滤关键词才进行推送
