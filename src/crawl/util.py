@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+import hashlib
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
+from crawl.api import ApiNews
+from database.models import DomainBlacklist, WebSearchNews
 from util.http import HttpClient
 from log.logger import crawl_logger
 
@@ -106,3 +109,27 @@ def is_same_domain(url1: str, url2: str) -> bool:
     url1_parsed = urlparse(url1)
     url2_parsed = urlparse(url2)
     return url1_parsed.netloc == url2_parsed.netloc
+
+# 滤重
+async def duplicate_search_web_news(news: list[ApiNews]) -> list[ApiNews]:
+    filtered_news = []
+
+    domin_blacklist = await DomainBlacklist.all().values_list("domain", flat=True)
+
+    titles = []
+    for news_item in news:
+        if any(domain in news_item.url for domain in domin_blacklist):
+            continue
+        
+        # 标题先滤重
+        if news_item.title in titles:
+            continue
+        titles.append(news_item.title)
+
+        # url滤重
+        if await WebSearchNews.filter(signature=news_item.signature).exists():
+            continue
+        filtered_news.append(news_item)
+    
+
+    return filtered_news

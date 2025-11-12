@@ -18,6 +18,7 @@ from route.site import site_router
 from settings import get_settings
 from middleware.log import AccessLogMiddleware
 from pubsub.connection import QUEUE_CRAWL_PAGECONTENT, MsgQueue
+from util.http import HttpClient
 from util.page import get_signature, is_hit_keywords
 
 app_settings = get_settings()
@@ -87,6 +88,8 @@ async def subscribe_and_save_crawl_page_content_and_push(sub_conn: Client):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await HttpClient.init(conn_limit=10, conn_limit_per_host=10, timeout=10)
+    
     # 初始化百炼
     Bailian.init(app_settings.dashscope_api_key, app_settings.dashscope_interpretation_app_id)
 
@@ -120,6 +123,8 @@ async def lifespan(app: FastAPI):
 
     # 关闭消息队列连接
     await sub_conn.close()
+
+    await HttpClient.shutdown()
 
 app = FastAPI(lifespan=lifespan, title="资讯政策数据采集", description="资讯政策数据采集")
 

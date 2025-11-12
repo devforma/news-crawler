@@ -10,7 +10,11 @@ class HttpClient:
     async def init(cls, conn_limit: int = 20, conn_limit_per_host: int = 10, timeout: int = 10):
         cls._http_connector = aiohttp.TCPConnector(limit=conn_limit, limit_per_host=conn_limit_per_host, verify_ssl=False)
         cls._http_timeout = aiohttp.ClientTimeout(total=timeout)
-    
+
+    @classmethod
+    async def shutdown(cls):
+        await cls._http_connector.close()
+        
     @classmethod
     async def get(cls, url: str, headers: dict[str, str] = {}) -> Any:
         if cls._http_connector is None:
@@ -27,5 +31,5 @@ class HttpClient:
 
         headers["Content-Type"] = "application/json"
         async with aiohttp.ClientSession(connector=cls._http_connector, connector_owner=False) as session:
-            async with session.post(url, headers=headers, data=json.dumps(list(data.keys())), timeout=cls._http_timeout) as response:
+            async with session.post(url, headers=headers, data=json.dumps(data), timeout=cls._http_timeout) as response:
                 return await response.json()

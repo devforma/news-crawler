@@ -1,10 +1,11 @@
 import asyncio
+import json
+from crawl.api import search_web_news
 from crawl.json import JsonExtractRule, crawl_list_using_json, extract_json_data
-from crawl.util import duplicate_url
-from core.http import HttpClient
-
-
-print(12 + (1231 or 300))
+from crawl.util import duplicate_url, generate_extraction_schema, is_same_domain
+from oss.store import OSS
+from settings import get_settings
+from util.http import HttpClient
 
 
 async def test_duplicate_url():
@@ -20,32 +21,52 @@ async def test_duplicate_url():
 
 
 def test_extract_json_data():
-    s = {
-      "title": "十字路口Crossing",
-      "home_page_url": "/feeds/MP_WXS_3010319264.json",
-      "description": "AI 正在给各行各业带来改变，我们在「十字路口」关注变革与机会，寻找、访谈和凝聚 AI 时代的「积极行动者」，和他们一起，探索和拥抱，新变化，新的可能性。「十字路口」是乔布斯形容苹果公司站在科技与人文的十字路口，伟大的产品往往诞生在这里。",
-      "items": [
-        {
-          "id": "FoRKhydaa65jYEXcInwQNQ",
-          "content_html": "",
-          "url": "https://mp.weixin.qq.com/s/FoRKhydaa65jYEXcInwQNQ",
-          "title": "谢谢 OpenAI，谢谢 o3，新的「套壳」创业机会来了 | 附 12 个潜力方向",
-          "image": "https://mmbiz.qpic.cn/mmbiz_jpg/FFcNSoQ3Kict7PKrLvrIq46DxfrvbzssSGAhmaR2F8zuqpxiabha6jcdInAibAMrRVNBVjY78ABoMmSmZk0icJKWHg/0?wx_fmt=jpeg",
-          "date_modified": "2025-04-23T08:43:55.000Z"
-        },
-        {
-          "id": "1vXrC9W9wR-DPh28bT6Zlw",
-          "content_html": "",
-          "url": "https://mp.weixin.qq.com/s/1vXrC9W9wR-DPh28bT6Zlw",
-          "title": "成为一个「接地气」的AI创业者分几步？从Google X研究员到做出6个月100万ARR的产品｜对谈Vozo创始人周昌印",
-          "image": "https://mmbiz.qpic.cn/mmbiz_jpg/FFcNSoQ3Kicv5uaQGs8u0BAtaicmaCOS8RPKrPia6hTPG3qXDvD9XXAOC3tREZJ6mEeIMwU3G1mtPeh8MAgCtvKnQ/0?wx_fmt=jpeg",
-          "date_modified": "2025-04-12T14:45:47.000Z"
-        }
-      ]
-    }
-    s = extract_json_data(s, JsonExtractRule(base_path='$.items', title_path='$[*].title', url_path='$[*].id', compose_template='https://mp.weixin.qq.com/s/$'))
-    print(s)
+    s = [
+          {
+            "feedPosts": [
+          {
+            "name": "homepage-story-card",
+            "config": {
+              "hed": "OpenAI is launching a version of ChatGPT for college students",
+              "link": "https://www.technologyreview.com/2025/07/29/1120801/openai-is-launching-a-version-of-chatgpt-for-college-students/",
+            }
+          }
+            ]
+          }
+    ]
+    s, ss = extract_json_data(s, JsonExtractRule(base_path='$.[0].feedPosts[*]', title_path='$.config.hed', url_path='$.config.link', compose_template='', display_url=""))
 
+    return s, ss
+
+
+async def test_oss_upload():
+    settings = get_settings()
+    OSS.init(
+        endpoint=settings.push_oss_endpoint,
+        region=settings.push_oss_region,
+        bucket=settings.push_oss_bucket,
+        accesskey_id=settings.push_oss_accesskey_id,
+        accesskey_secret=settings.push_oss_accesskey_secret
+    )
+    
+    await OSS.upload("articles/2025-07-21/1.txt", "test")
+
+async def test_search_web_news():
+    await HttpClient.init(conn_limit=10, conn_limit_per_host=10, timeout=10)
+    news = await search_web_news("华为", "gov")
+    print(news)
+    await HttpClient.shutdown()
 
 if __name__ == "__main__":
-    asyncio.run(test_duplicate_url())
+    # asyncio.run(test_duplicate_url())
+    # asyncio.run(test_oss_upload())
+
+
+    # test_extract_json_data()
+
+    # print(is_same_domain("http://xa.baidu.com/dawda/adawd", "https://www.baidu.com/s?wd=123"))
+
+    # print(json.dumps(generate_extraction_schema(["div.news--item div.news--item-title a.sdaa | ada"]), indent=4))
+
+
+    asyncio.run(test_search_web_news())

@@ -4,7 +4,8 @@ from typing import Generic, Optional, TypeVar
 from fastapi import APIRouter, Path, Query
 from pydantic import BaseModel, Field
 
-from database.models import Page, PageContent, Site, SiteCategory
+from crawl.api import ApiNews
+from database.models import Page, PageContent, Site, SiteCategory, WebSearchNews
 from llm.bailian import Bailian
 
 post_router = APIRouter(prefix="/post", tags=["post"])
@@ -101,3 +102,15 @@ async def get_article_interpretation(id: int = Path(..., description="文章ID")
 async def get_sites(names: list[str] = Query(..., description="站点名称")) -> tuple[list[int], dict[int, str]]:
     sites = await Site.filter(name__in=names).all()
     return [site.id for site in sites], {site.id: site.name for site in sites}
+
+# 获取网络搜索新闻
+@post_router.get("/search_web_news", response_model=Response[list[ApiNews]], summary="获取网络搜索新闻")
+async def get_search_web_news(company: str = Query(..., description="公司"), limit: int = Query(20, description="数量")) -> Response[list[ApiNews]]:
+    news = await WebSearchNews.filter(company=company).order_by("-id").limit(20).all()
+    return Response(success=True, error_message="", data=[ApiNews(
+        title=news.title,
+        url=news.url,
+        website="",
+        signature="",
+        date=""
+    ) for news in news], pagination=None)

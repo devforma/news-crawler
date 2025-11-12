@@ -92,3 +92,17 @@ class CrawlRequest(models.Model):
     class Meta:
         table = "crawl_requests"
         table_description = "采集请求"
+
+class WebSearchNews(models.Model):
+    id = fields.IntField(primary_key=True, generated=True)
+    company = fields.CharField(max_length=24, description="公司", index=True)
+    title = fields.TextField(description="标题")
+    url = fields.TextField(description="URL")
+    signature = fields.CharField(max_length=32, description="签名", index=True)
+    website = fields.TextField(description="网站")
+    date = fields.DatetimeField(description="日期")
+    created_at = fields.DatetimeField(auto_now_add=True, description="创建时间")
+
+    class Meta:
+        table = "web_search_news"
+        table_description = "网络搜索新闻"

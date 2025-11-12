@@ -1,3 +1,4 @@
+import asyncio
 import datetime as dt
 from datetime import datetime
 import urllib.parse
@@ -6,8 +7,8 @@ from fastapi.responses import PlainTextResponse
 import hashlib
 
 from pydantic import BaseModel, Field
-from database.models import DomainBlacklist, Page, PageSignature, Site
-from llm import bailian
+from crawl.api import search_web_news
+from database.models import DomainBlacklist, Page, PageSignature, Site, WebSearchNews
 from llm.bailian import Bailian
 from log.logger import server_logger
 from oss.store import OSS
@@ -15,7 +16,38 @@ from pubsub.connection import MsgQueue, QUEUE_CRAWL_LISTPAGE
 from pubsub.msg import CrawlListPageMsg
 from route.response import Response
 from settings import get_settings, Settings
+from crawl.util import duplicate_search_web_news
+
 crawl_router = APIRouter(prefix="/crawl", tags=["爬取"])
+
+@crawl_router.get("/search_web_news", description="网络搜索新闻")
+async def web_news_by_search(token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[bool]:
+    if token != settings.admin_auth_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    keywords_map = {
+        "华为": ["华为在芯片、GPU、昇腾、CUDA、大模型等方面的新闻资讯", "华为在各地参与的活动、项目资讯"],
+        "字节跳动": ["字节跳动、火山引擎在芯片、GPU、CUDA、大模型、豆包等方面的新闻资讯", "字节跳动、火山引擎在各地参与的活动、项目资讯"],
+        "百度云": ["百度云在芯片、GPU、CUDA、大模型、文心一言等方面的新闻资讯", "百度云在各地参与的活动、项目资讯"],
+        "腾讯云": ["腾讯云在芯片、GPU、CUDA、大模型、混元等方面的新闻资讯", "腾讯云在各地参与的活动、项目资讯"],
+    }
+    for company, keywords in keywords_map.items():
+        print(f"公司: {company}", "关键词: ", keywords)
+        for keyword in keywords:
+            news = await search_web_news(keyword)
+            news = await duplicate_search_web_news(news)
+            for news_item in news:
+                await WebSearchNews.create(
+                    company=company,
+                    title=news_item.title,
+                    url=news_item.url,
+                    website=news_item.website,
+                    date=news_item.date,
+                    signature=news_item.signature
+                )
+        await asyncio.sleep(1)
+        
+    return Response.success(True)
 
 @crawl_router.get("/schedule", description="触发爬取任务,将所有站点列表页加入爬取队列")
 async def schedule(token: str = Query(..., description="授权令牌"), settings: Settings = Depends(get_settings)) -> Response[bool]:
