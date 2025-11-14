@@ -29,10 +29,12 @@ async def web_news_by_search(token: str = Query(..., description="授权令牌")
         "华为": ["华为在芯片、GPU、昇腾、CUDA、大模型等方面的新闻资讯", "华为在各地参与的活动、项目资讯"],
         "字节跳动": ["字节跳动、火山引擎在芯片、GPU、CUDA、大模型、豆包等方面的新闻资讯", "字节跳动、火山引擎在各地参与的活动、项目资讯"],
         "百度云": ["百度云在芯片、GPU、CUDA、大模型、文心一言等方面的新闻资讯", "百度云在各地参与的活动、项目资讯"],
-        "腾讯云": ["腾讯云在芯片、GPU、CUDA、大模型、混元等方面的新闻资讯", "腾讯云在各地参与的活动、项目资讯"],
+        "其他": [
+            "腾讯云在芯片、GPU、CUDA、大模型、混元等方面的新闻资讯", "腾讯云在各地参与的活动、项目资讯"
+            "列举deepseek、openai、gemini、AWS、谷歌、meta、微软、英伟达、XAI、claude等厂商动态",
+        ],
     }
     for company, keywords in keywords_map.items():
-        print(f"公司: {company}", "关键词: ", keywords)
         for keyword in keywords:
             news = await search_web_news(keyword)
             news = await duplicate_search_web_news(news)

@@ -25,7 +25,9 @@ async def search_web_news(keywords: str) -> list[ApiNews]:
         "messages": [{"role": "user", "content": keywords}],
         "edition": "standard",
         "search_source": "baidu_search_v2",
+        "resource_type_filter": [{"type": "web","top_k": 20}],
         "block_websites": [
+            "blog.csdn.net",
             "baidu.com",
             "huawei.com",
             "cloud.tencent.com",
