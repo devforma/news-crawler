@@ -3,6 +3,7 @@ from datetime import datetime
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from starlette.middleware.cors import CORSMiddleware
 from nats.aio.client import Client
 from tortoise.contrib.fastapi import RegisterTortoise
 from database.connection import generate_tortoise_config
@@ -128,6 +129,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="资讯政策数据采集", description="资讯政策数据采集")
 
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(AccessLogMiddleware)
 app.include_router(crawl_router)
 app.include_router(site_router)
