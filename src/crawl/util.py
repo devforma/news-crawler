@@ -98,7 +98,7 @@ def compose_url(entry_url: str, url: str) -> str:
 # 当前url列表与已爬取的url进行去重
 async def duplicate_url(deduplicate_api: str, urls: dict[str, str]) -> dict[str, str]:
     try:
-        results = await HttpClient.post(deduplicate_api, urls)
+        results = await HttpClient.post(deduplicate_api, list(urls.keys()))
         return {url: title for url, title in urls.items() if url in results.get("data", [])}
     except Exception as e:
         crawl_logger.error(f"Duplicate url error: {e}")
