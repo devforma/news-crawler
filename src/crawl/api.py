@@ -41,11 +41,11 @@ async def search_web_news(keywords: str) -> list[ApiNews]:
     try:
         data = await HttpClient.post(url, data=payload, headers=headers)
         return [ApiNews(
-            title=ref["title"],
-            url=ref["url"],
-            website=ref["website"],
+            title=ref["title"].strip(),
+            url=ref["url"].strip(),
+            website=ref["website"].strip(),
             signature=hashlib.md5(ref["url"].encode()).hexdigest(),
-            date=ref["date"]
+            date=ref["date"].strip()
         ) for ref in data["references"]]
 
     except Exception as e:

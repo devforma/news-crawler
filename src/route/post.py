@@ -112,5 +112,5 @@ async def get_search_web_news(company: str = Query(..., description="公司"), l
         url=news.url,
         website="",
         signature="",
-        date=""
+        date=news.date.strftime("%Y-%m-%d")
     ) for news in news], pagination=None)
