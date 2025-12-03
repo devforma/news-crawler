@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import hashlib
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
@@ -128,6 +127,9 @@ async def duplicate_search_web_news(news: list[ApiNews]) -> list[ApiNews]:
 
         # url滤重
         if await WebSearchNews.filter(signature=news_item.signature).exists():
+            continue
+        # 标题滤重
+        if await WebSearchNews.filter(title=news_item.title).exists():
             continue
         filtered_news.append(news_item)
     
