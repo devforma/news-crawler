@@ -106,7 +106,7 @@ async def get_sites(names: list[str] = Query(..., description="站点名称")) -
 # 获取网络搜索新闻
 @post_router.get("/search_web_news", response_model=Response[list[ApiNews]], summary="获取网络搜索新闻")
 async def get_search_web_news(company: str = Query(..., description="公司"), limit: int = Query(20, description="数量")) -> Response[list[ApiNews]]:
-    news = await WebSearchNews.filter(company=company).order_by("-id").limit(20).all()
+    news = await WebSearchNews.filter(company=company).order_by("-date", "-id").limit(20).all()
     return Response(success=True, error_message="", data=[ApiNews(
         title=news.title,
         url=news.url,
