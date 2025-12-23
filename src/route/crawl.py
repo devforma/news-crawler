@@ -139,6 +139,31 @@ async def get_articles(start_date: str = Query(..., description="开始日期"),
 
     return Response.success(contents)
 
+@crawl_router.get("/get_articles_gov", description="获取治理相关文章")
+async def get_articles_gov(start_date: str = Query(..., description="开始日期"), end_date: str = Query(..., description="结束日期")) -> Response[list[dict]]:
+    site_ids = await Site.filter(send_to_aiagent_gov=True).values_list("id", flat=True)
+    pages = await Page.filter(
+        site_id__in=site_ids, 
+        visible=True,
+        created_at__gte=datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S"),
+        created_at__lte=datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
+    ).order_by("-id").all().select_related("site")
+
+
+    china_timezone = dt.timezone(dt.timedelta(hours=8))
+    contents = []
+    for page in pages:
+        contents.append({
+            "id": str(page.id),
+            "title": page.title,
+            "publish_time": page.created_at.astimezone(china_timezone).strftime("%Y-%m-%d %H:%M:%S"),
+            "source": page.site.name,
+            "url": page.display_url,
+            "summary": page.summary,
+        })
+
+    return Response.success(contents)
+
 
 class SummarizeArticleRequest(BaseModel):
     title: str = Field(..., description="标题")
