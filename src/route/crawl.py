@@ -127,7 +127,13 @@ async def get_articles(start_date: str = Query(..., description="开始日期"),
 
     china_timezone = dt.timezone(dt.timedelta(hours=8))
     contents = []
+
+    # 过滤标题相同的文章
+    titles = set()
     for page in pages:
+        if page.title in titles:
+            continue
+        titles.add(page.title)
         contents.append({
             "id": str(page.id),
             "title": page.title,
@@ -152,7 +158,11 @@ async def get_articles_gov(start_date: str = Query(..., description="开始日�
 
     china_timezone = dt.timezone(dt.timedelta(hours=8))
     contents = []
+    titles = set()
     for page in pages:
+        if page.title in titles:
+            continue
+        titles.add(page.title)
         contents.append({
             "id": str(page.id),
             "title": page.title,
