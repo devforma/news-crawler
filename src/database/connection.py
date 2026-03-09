@@ -6,7 +6,9 @@ from settings import Settings
 async def init_db(settings: Settings):
     await Tortoise.init(
         db_url=_compose_db_url(settings=settings),
-        modules={'models': ['database.models']}
+        modules={'models': ['database.models']},
+        use_tz=True,
+        timezone="Asia/Hong_Kong"
     )
 
 async def close_db():

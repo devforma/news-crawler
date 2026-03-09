@@ -67,7 +67,6 @@ async def list_posts(
     results = await query.order_by("-id").offset((page - 1) * page_size).limit(page_size).all().select_related("site")
 
     # 中国时区
-    china_timezone = dt.timezone(dt.timedelta(hours=8))
     posts = [Post(
             id=result.id,
             title=result.title,
@@ -77,7 +76,7 @@ async def list_posts(
             url=result.url,
             summary=result.summary,
             # 展示日期使用爬取时间, 页面解析得到的日期不准
-            publish_time=result.created_at.astimezone(china_timezone).strftime("%Y-%m-%d") if result.created_at else ""
+            publish_time=result.created_at.strftime("%Y-%m-%d") if result.created_at else ""
         ) for result in results]
 
     return Response(success=True, error_message="", data=posts, pagination=Pagination(page=page, page_size=page_size, total=total))
