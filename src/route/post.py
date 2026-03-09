@@ -59,7 +59,7 @@ async def list_posts(
         # Convert to datetime objects for proper filtering
         start_datetime = datetime.combine(start_date, datetime.min.time())
         end_datetime = datetime.combine(end_date, datetime.max.time())
-        query = query.filter(date__gte=start_datetime, date__lte=end_datetime)
+        query = query.filter(created_at__gte=start_datetime, created_at__lte=end_datetime)
     if type:
         query = query.filter(site__category=type)
 
